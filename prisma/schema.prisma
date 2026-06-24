@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  orders       Order[]
+
+  @@map("users")
+}
+
+model TimelineEntry {
+  id          String   @id @default(cuid())
+  year        Int
+  title       String
+  description String
+  tags        String   @default("")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("timeline")
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  description String
+  shortDesc   String         @default("") @map("short_desc")
+  price       Float
+  type        String
+  inventory   Int?
+  features    String         @default("")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  media       ProductMedia[]
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model ProductMedia {
+  id        String  @id @default(cuid())
+  productId String  @map("product_id")
+  url       String
+  type      String  @default("image")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_media")
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  userId       String?     @map("user_id")
+  status       String      @default("pending")
+  totalPrice   Float       @map("total_price")
+  customerName String      @map("customer_name")
+  customerEmail String     @map("customer_email")
+  customerPhone String?    @map("customer_phone")
+  notes        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  user         User?       @relation(fields: [userId], references: [id])
+  items        OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model BlogPost {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String
+  excerpt   String   @default("")
+  published Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("blog_posts")
+}
