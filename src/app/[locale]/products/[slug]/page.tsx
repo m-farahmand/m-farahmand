@@ -2,13 +2,14 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { AddToCartButton } from "@/components/products/AddToCartButton";
+import { attachProductMedia } from "@/lib/content";
 import {
   formatPrice,
   parseFeatures,
   productTypeLabel,
 } from "@/lib/utils";
+import { getProductMediaBySlug } from "@/lib/db-lang";
 import type { Locale } from "@/i18n/routing";
-import type { Product } from "@/types";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -17,7 +18,9 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { locale, slug } = await params;
   const t = await getTranslations({ locale, namespace: "common" });
-  const product = await prisma.product.findUnique({ where: { slug } });
+  const product = await prisma.product.findUnique({
+    where: { slug_lang: { slug, lang: locale } },
+  });
   if (!product) return { title: t("productNotFound") };
   return {
     title: product.name,
@@ -33,19 +36,15 @@ export default async function ProductDetailPage({ params }: Props) {
   const tt = await getTranslations("productTypes");
 
   const product = await prisma.product.findUnique({
-    where: { slug },
+    where: { slug_lang: { slug, lang: locale } },
     include: { media: true },
   });
 
   if (!product) notFound();
 
-  const mapped = {
-    ...product,
-    createdAt: product.createdAt.toISOString(),
-  } as Product;
-
-  const features = parseFeatures(product.features);
-  const imageUrl = product.media[0]?.url;
+  const [mapped] = await attachProductMedia([product], getProductMediaBySlug);
+  const features = parseFeatures(mapped.features);
+  const imageUrl = mapped.media?.[0]?.url;
   const typeLabels = {
     software: tt("software"),
     app: tt("app"),
@@ -59,7 +58,7 @@ export default async function ProductDetailPage({ params }: Props) {
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={product.name}
+              alt={mapped.name}
               className="max-h-64 w-full object-contain"
             />
           ) : (
@@ -69,14 +68,14 @@ export default async function ProductDetailPage({ params }: Props) {
 
         <div>
           <span className="mb-3 inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-400">
-            {productTypeLabel(product.type, typeLabels)}
+            {productTypeLabel(mapped.type, typeLabels)}
           </span>
-          <h1 className="mb-4 text-4xl font-bold text-white">{product.name}</h1>
+          <h1 className="mb-4 text-4xl font-bold text-white">{mapped.name}</h1>
           <p className="mb-6 text-3xl font-bold text-emerald-400">
-            {formatPrice(product.price, locale as Locale)}
+            {formatPrice(mapped.price, locale as Locale)}
           </p>
           <p className="mb-8 leading-relaxed text-zinc-400">
-            {product.description}
+            {mapped.description}
           </p>
 
           {features.length > 0 && (
@@ -98,10 +97,10 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
           )}
 
-          {product.inventory !== null && (
+          {mapped.inventory !== null && (
             <p className="mb-6 text-sm text-zinc-500">
-              {product.inventory > 0
-                ? t("unitsAvailable", { count: product.inventory })
+              {mapped.inventory > 0
+                ? t("unitsAvailable", { count: mapped.inventory })
                 : t("currentlyOutOfStock")}
             </p>
           )}

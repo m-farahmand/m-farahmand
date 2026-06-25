@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { timelineSchema } from "@/lib/validations";
+import {
+  serializeTimelineForAdmin,
+  upsertTimelineByLang,
+} from "@/lib/db-lang";
 
 export async function GET() {
   const session = await getSession();
@@ -9,10 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const entries = await prisma.timelineEntry.findMany({
-    orderBy: [{ year: "asc" }, { sortOrder: "asc" }],
-  });
-  return NextResponse.json(entries);
+  return NextResponse.json(await serializeTimelineForAdmin());
 }
 
 export async function POST(request: Request) {
@@ -25,17 +25,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = timelineSchema.parse(body);
 
-    const entry = await prisma.timelineEntry.create({
-      data: {
-        year: data.year,
-        title: data.title,
-        description: data.description,
-        tags: data.tags || "",
-        sortOrder: data.sortOrder ?? 0,
-      },
-    });
+    await upsertTimelineByLang(
+      data.year,
+      data.sortOrder ?? 0,
+      data.translations
+    );
 
-    return NextResponse.json(entry, { status: 201 });
+    const entries = await serializeTimelineForAdmin();
+    const created = entries.find(
+      (e) => e.year === data.year && e.sortOrder === (data.sortOrder ?? 0)
+    );
+
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to create entry";

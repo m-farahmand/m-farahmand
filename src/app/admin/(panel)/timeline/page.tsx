@@ -2,21 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { TimelineEntry } from "@/types";
+import { routing, type Locale } from "@/i18n/routing";
+import { LocaleTabs } from "@/components/admin/LocaleTabs";
+import type { TimelineEntryAdmin, TimelineTranslationFields } from "@/types";
 
-const emptyForm = {
-  year: "",
+const emptyTranslation = (): TimelineTranslationFields => ({
   title: "",
   description: "",
   tags: "",
+});
+
+const emptyForm = () => ({
+  year: "",
   sortOrder: "0",
-};
+  translations: Object.fromEntries(
+    routing.locales.map((locale) => [locale, emptyTranslation()])
+  ) as TimelineEntryAdmin["translations"],
+});
 
 export default function AdminTimelinePage() {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
-  const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [entries, setEntries] = useState<TimelineEntryAdmin[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [activeLocale, setActiveLocale] = useState<Locale>("fa");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,14 +41,29 @@ export default function AdminTimelinePage() {
     loadEntries();
   }, []);
 
+  function updateTranslation(
+    locale: Locale,
+    field: keyof TimelineTranslationFields,
+    value: string
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      translations: {
+        ...prev.translations,
+        [locale]: {
+          ...(prev.translations[locale] ?? emptyTranslation()),
+          [field]: value,
+        },
+      },
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = {
       year: parseInt(form.year, 10),
-      title: form.title,
-      description: form.description,
-      tags: form.tags,
       sortOrder: parseInt(form.sortOrder, 10),
+      translations: form.translations,
     };
 
     const url = editingId
@@ -53,19 +77,20 @@ export default function AdminTimelinePage() {
       body: JSON.stringify(payload),
     });
 
-    setForm(emptyForm);
+    setForm(emptyForm());
     setEditingId(null);
     setShowForm(false);
     loadEntries();
   }
 
-  function startEdit(entry: TimelineEntry) {
+  function startEdit(entry: TimelineEntryAdmin) {
     setForm({
       year: String(entry.year),
-      title: entry.title,
-      description: entry.description,
-      tags: entry.tags,
       sortOrder: String(entry.sortOrder),
+      translations: {
+        fa: entry.translations.fa ?? emptyTranslation(),
+        en: entry.translations.en ?? emptyTranslation(),
+      },
     });
     setEditingId(entry.id);
     setShowForm(true);
@@ -79,13 +104,15 @@ export default function AdminTimelinePage() {
 
   if (loading) return <p className="text-zinc-500">{tc("loading")}</p>;
 
+  const active = form.translations[activeLocale] ?? emptyTranslation();
+
   return (
     <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">{t("timeline")}</h1>
         <button
           onClick={() => {
-            setForm(emptyForm);
+            setForm(emptyForm());
             setEditingId(null);
             setShowForm(!showForm);
           }}
@@ -100,6 +127,8 @@ export default function AdminTimelinePage() {
           onSubmit={handleSubmit}
           className="mb-8 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
         >
+          <LocaleTabs active={activeLocale} onChange={setActiveLocale} />
+
           <div className="grid gap-4 sm:grid-cols-2">
             <input
               placeholder={t("year")}
@@ -121,16 +150,18 @@ export default function AdminTimelinePage() {
           </div>
           <input
             placeholder={t("titleLabel")}
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            value={active.title}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "title", e.target.value)
+            }
             required
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
             placeholder={t("fullDescription")}
-            value={form.description}
+            value={active.description}
             onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
+              updateTranslation(activeLocale, "description", e.target.value)
             }
             required
             rows={3}
@@ -138,8 +169,10 @@ export default function AdminTimelinePage() {
           />
           <input
             placeholder={t("tagsPlaceholder")}
-            value={form.tags}
-            onChange={(e) => setForm({ ...form, tags: e.target.value })}
+            value={active.tags}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "tags", e.target.value)
+            }
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <button
@@ -161,7 +194,12 @@ export default function AdminTimelinePage() {
               <span className="ms-3 rounded-full bg-emerald-500/10 px-2 py-0.5 text-sm font-bold text-emerald-400">
                 {entry.year}
               </span>
-              <span className="font-medium text-white">{entry.title}</span>
+              <span className="font-medium text-white">
+                {entry.translations.fa?.title}
+              </span>
+              <span className="ms-2 text-sm text-zinc-500">
+                / {entry.translations.en?.title}
+              </span>
             </div>
             <div>
               <button

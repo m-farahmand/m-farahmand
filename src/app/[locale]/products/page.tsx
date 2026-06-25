@@ -1,7 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
+import { attachProductMedia } from "@/lib/content";
+import { getProductMediaBySlug } from "@/lib/db-lang";
 import { ProductGrid } from "@/components/products/ProductGrid";
-import type { Product } from "@/types";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -25,14 +26,12 @@ export default async function ProductsPage({ params }: Props) {
   const tt = await getTranslations("productTypes");
 
   const products = await prisma.product.findMany({
+    where: { lang: locale },
     include: { media: true },
     orderBy: { createdAt: "desc" },
   });
 
-  const mapped = products.map((p) => ({
-    ...p,
-    createdAt: p.createdAt.toISOString(),
-  })) as Product[];
+  const mapped = await attachProductMedia(products, getProductMediaBySlug);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">

@@ -1,10 +1,10 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
+import { attachProductMedia, mapTimelineEntry } from "@/lib/content";
+import { getProductMediaBySlug } from "@/lib/db-lang";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import { Timeline } from "@/components/timeline/Timeline";
-import { setRequestLocale } from "next-intl/server";
-import type { Product, TimelineEntry } from "@/types";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,25 +20,24 @@ export default async function HomePage({ params }: Props) {
   const [products, timeline] = await Promise.all([
     prisma.product.findMany({
       take: 3,
+      where: { lang: locale },
       include: { media: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.timelineEntry.findMany({
       take: 4,
+      where: { lang: locale },
       orderBy: [{ year: "desc" }, { sortOrder: "asc" }],
     }),
   ]);
 
-  const featuredProducts = products.map((p) => ({
-    ...p,
-    createdAt: p.createdAt.toISOString(),
-    media: p.media,
-  })) as Product[];
-
-  const timelineEntries = timeline.map((entry) => ({
-    ...entry,
-    createdAt: entry.createdAt.toISOString(),
-  })) as TimelineEntry[];
+  const featuredProducts = await attachProductMedia(
+    products,
+    getProductMediaBySlug
+  );
+  const timelineEntries = timeline
+    .map(mapTimelineEntry)
+    .reverse();
 
   return (
     <>
@@ -95,7 +94,7 @@ export default async function HomePage({ params }: Props) {
               {tc("fullTimeline")}
             </Link>
           </div>
-          <Timeline entries={timelineEntries.reverse()} compact />
+          <Timeline entries={timelineEntries} compact />
         </div>
       </section>
     </>

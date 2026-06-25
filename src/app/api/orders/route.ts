@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { orderSchema } from "@/lib/validations";
+import { mapProduct } from "@/lib/content";
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
     const productIds = data.items.map((i) => i.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
+      include: { media: true },
     });
 
     if (products.length !== productIds.length) {
@@ -39,8 +41,8 @@ export async function POST(request: Request) {
       for (const item of data.items) {
         const product = productMap.get(item.productId)!;
         if (product.inventory !== null) {
-          await tx.product.update({
-            where: { id: product.id },
+          await tx.product.updateMany({
+            where: { slug: product.slug },
             data: { inventory: { decrement: item.quantity } },
           });
         }
@@ -57,12 +59,22 @@ export async function POST(request: Request) {
           items: { create: orderItems },
         },
         include: {
-          items: { include: { product: true } },
+          items: { include: { product: { include: { media: true } } } },
         },
       });
     });
 
-    return NextResponse.json(order, { status: 201 });
+    return NextResponse.json(
+      {
+        ...order,
+        createdAt: order.createdAt.toISOString(),
+        items: order.items.map((item) => ({
+          ...item,
+          product: item.product ? mapProduct(item.product) : undefined,
+        })),
+      },
+      { status: 201 }
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to create order";

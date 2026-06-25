@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, slugify } from "@/lib/auth";
 import { productSchema } from "@/lib/validations";
+import {
+  serializeProductsForAdmin,
+  upsertProductByLang,
+} from "@/lib/db-lang";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -15,11 +19,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const products = await prisma.product.findMany({
-    include: { media: true },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(products);
+  return NextResponse.json(await serializeProductsForAdmin());
 }
 
 export async function POST(request: Request) {
@@ -31,23 +31,23 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const data = productSchema.parse(body);
-    const slug = data.slug || slugify(data.name);
+    const slug =
+      data.slug || slugify(data.translations.fa.name || data.translations.en.name);
 
-    const product = await prisma.product.create({
-      data: {
-        name: data.name,
-        slug,
-        description: data.description,
-        shortDesc: data.shortDesc || "",
+    await upsertProductByLang(
+      slug,
+      {
         price: data.price,
         type: data.type,
         inventory: data.type === "device" ? (data.inventory ?? 0) : null,
-        features: data.features || "",
       },
-      include: { media: true },
-    });
+      data.translations
+    );
 
-    return NextResponse.json(product, { status: 201 });
+    const products = await serializeProductsForAdmin();
+    const created = products.find((p) => p.slug === slug);
+
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to create product";

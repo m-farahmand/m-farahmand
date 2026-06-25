@@ -2,21 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { routing, type Locale } from "@/i18n/routing";
+import { LocaleTabs } from "@/components/admin/LocaleTabs";
 import { formatDate } from "@/lib/utils";
-import type { BlogPost } from "@/types";
+import type { BlogPostAdmin, BlogTranslationFields } from "@/types";
 
-const emptyForm = {
+const emptyTranslation = (): BlogTranslationFields => ({
   title: "",
   content: "",
   excerpt: "",
+});
+
+const emptyForm = () => ({
   published: true,
-};
+  translations: Object.fromEntries(
+    routing.locales.map((locale) => [locale, emptyTranslation()])
+  ) as BlogPostAdmin["translations"],
+});
 
 export default function AdminBlogPage() {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<BlogPostAdmin[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [activeLocale, setActiveLocale] = useState<Locale>("fa");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,6 +41,23 @@ export default function AdminBlogPage() {
     loadPosts();
   }, []);
 
+  function updateTranslation(
+    locale: Locale,
+    field: keyof BlogTranslationFields,
+    value: string
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      translations: {
+        ...prev.translations,
+        [locale]: {
+          ...(prev.translations[locale] ?? emptyTranslation()),
+          [field]: value,
+        },
+      },
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -44,18 +70,19 @@ export default function AdminBlogPage() {
       body: JSON.stringify(form),
     });
 
-    setForm(emptyForm);
+    setForm(emptyForm());
     setEditingId(null);
     setShowForm(false);
     loadPosts();
   }
 
-  function startEdit(post: BlogPost) {
+  function startEdit(post: BlogPostAdmin) {
     setForm({
-      title: post.title,
-      content: post.content,
-      excerpt: post.excerpt,
       published: post.published,
+      translations: {
+        fa: post.translations.fa ?? emptyTranslation(),
+        en: post.translations.en ?? emptyTranslation(),
+      },
     });
     setEditingId(post.id);
     setShowForm(true);
@@ -69,13 +96,15 @@ export default function AdminBlogPage() {
 
   if (loading) return <p className="text-zinc-500">{tc("loading")}</p>;
 
+  const active = form.translations[activeLocale] ?? emptyTranslation();
+
   return (
     <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">{t("blogPosts")}</h1>
         <button
           onClick={() => {
-            setForm(emptyForm);
+            setForm(emptyForm());
             setEditingId(null);
             setShowForm(!showForm);
           }}
@@ -90,23 +119,31 @@ export default function AdminBlogPage() {
           onSubmit={handleSubmit}
           className="mb-8 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
         >
+          <LocaleTabs active={activeLocale} onChange={setActiveLocale} />
+
           <input
             placeholder={t("titleLabel")}
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            value={active.title}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "title", e.target.value)
+            }
             required
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <input
             placeholder={t("excerpt")}
-            value={form.excerpt}
-            onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+            value={active.excerpt}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "excerpt", e.target.value)
+            }
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
             placeholder={t("contentPlaceholder")}
-            value={form.content}
-            onChange={(e) => setForm({ ...form, content: e.target.value })}
+            value={active.content}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "content", e.target.value)
+            }
             required
             rows={8}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 font-mono text-sm text-white"
@@ -137,9 +174,11 @@ export default function AdminBlogPage() {
             className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"
           >
             <div>
-              <p className="font-medium text-white">{post.title}</p>
+              <p className="font-medium text-white">
+                {post.translations.fa?.title}
+              </p>
               <p className="text-sm text-zinc-500">
-                {formatDate(post.createdAt, "fa")}
+                {post.translations.en?.title} · {formatDate(post.createdAt, "fa")}
                 {!post.published && ` · ${t("draft")}`}
               </p>
             </div>

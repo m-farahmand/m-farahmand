@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
+import { mapTimelineEntry } from "@/lib/content";
 import { Timeline } from "@/components/timeline/Timeline";
-import type { TimelineEntry } from "@/types";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -24,13 +24,11 @@ export default async function AboutPage({ params }: Props) {
   const t = await getTranslations("about");
 
   const entries = await prisma.timelineEntry.findMany({
+    where: { lang: locale },
     orderBy: [{ year: "asc" }, { sortOrder: "asc" }],
   });
 
-  const timelineEntries = entries.map((entry) => ({
-    ...entry,
-    createdAt: entry.createdAt.toISOString(),
-  })) as TimelineEntry[];
+  const timelineEntries = entries.map(mapTimelineEntry);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">

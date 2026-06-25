@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { attachProductMedia, getLocaleFromRequest } from "@/lib/content";
+import { getProductMediaBySlug } from "@/lib/db-lang";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const locale = getLocaleFromRequest(request);
+
   const product = await prisma.product.findUnique({
-    where: { slug },
+    where: { slug_lang: { slug, lang: locale } },
     include: { media: true },
   });
 
@@ -15,5 +19,6 @@ export async function GET(
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
-  return NextResponse.json(product);
+  const [mapped] = await attachProductMedia([product], getProductMediaBySlug);
+  return NextResponse.json(mapped);
 }

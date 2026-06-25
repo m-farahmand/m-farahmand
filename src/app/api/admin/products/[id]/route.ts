@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, slugify } from "@/lib/auth";
 import { productSchema } from "@/lib/validations";
+import {
+  deleteProductBySlug,
+  resolveProductSlugFromId,
+  serializeProductsForAdmin,
+  upsertProductByLang,
+} from "@/lib/db-lang";
 
 export async function PUT(
   request: Request,
@@ -17,23 +23,36 @@ export async function PUT(
   try {
     const body = await request.json();
     const data = productSchema.parse(body);
+    const existingSlug = await resolveProductSlugFromId(id);
+    if (!existingSlug) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
 
-    const product = await prisma.product.update({
-      where: { id },
-      data: {
-        name: data.name,
-        slug: data.slug || slugify(data.name),
-        description: data.description,
-        shortDesc: data.shortDesc || "",
+    const slug =
+      data.slug ||
+      slugify(data.translations.fa.name || data.translations.en.name);
+
+    if (slug !== existingSlug) {
+      await prisma.product.updateMany({
+        where: { slug: existingSlug },
+        data: { slug },
+      });
+    }
+
+    await upsertProductByLang(
+      slug,
+      {
         price: data.price,
         type: data.type,
         inventory: data.type === "device" ? (data.inventory ?? 0) : null,
-        features: data.features || "",
       },
-      include: { media: true },
-    });
+      data.translations
+    );
 
-    return NextResponse.json(product);
+    const products = await serializeProductsForAdmin();
+    const updated = products.find((p) => p.slug === slug);
+
+    return NextResponse.json(updated);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to update product";
@@ -53,7 +72,12 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    await prisma.product.delete({ where: { id } });
+    const slug = await resolveProductSlugFromId(id);
+    if (!slug) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    await deleteProductBySlug(slug);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });

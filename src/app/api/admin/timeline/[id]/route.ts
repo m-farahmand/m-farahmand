@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { timelineSchema } from "@/lib/validations";
+import {
+  deleteTimelineGroup,
+  resolveTimelineGroupFromId,
+  serializeTimelineForAdmin,
+  upsertTimelineByLang,
+} from "@/lib/db-lang";
 
 export async function PUT(
   request: Request,
@@ -17,19 +23,27 @@ export async function PUT(
   try {
     const body = await request.json();
     const data = timelineSchema.parse(body);
+    const group = await resolveTimelineGroupFromId(id);
+    if (!group) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
 
-    const entry = await prisma.timelineEntry.update({
-      where: { id },
-      data: {
-        year: data.year,
-        title: data.title,
-        description: data.description,
-        tags: data.tags || "",
-        sortOrder: data.sortOrder ?? 0,
-      },
-    });
+    if (group.year !== data.year || group.sortOrder !== (data.sortOrder ?? 0)) {
+      await deleteTimelineGroup(group.year, group.sortOrder);
+    }
 
-    return NextResponse.json(entry);
+    await upsertTimelineByLang(
+      data.year,
+      data.sortOrder ?? 0,
+      data.translations
+    );
+
+    const entries = await serializeTimelineForAdmin();
+    const updated = entries.find(
+      (e) => e.year === data.year && e.sortOrder === (data.sortOrder ?? 0)
+    );
+
+    return NextResponse.json(updated);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to update entry";
@@ -49,7 +63,12 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    await prisma.timelineEntry.delete({ where: { id } });
+    const group = await resolveTimelineGroupFromId(id);
+    if (!group) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
+
+    await deleteTimelineGroup(group.year, group.sortOrder);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Entry not found" }, { status: 404 });

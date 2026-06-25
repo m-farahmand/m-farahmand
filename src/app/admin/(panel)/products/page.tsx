@@ -2,25 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { routing, type Locale } from "@/i18n/routing";
+import { LocaleTabs } from "@/components/admin/LocaleTabs";
 import { formatPrice, productTypeLabel } from "@/lib/utils";
-import type { Product } from "@/types";
+import type { ProductAdmin, ProductTranslationFields } from "@/types";
 
-const emptyForm = {
+const emptyTranslation = (): ProductTranslationFields => ({
   name: "",
   description: "",
   shortDesc: "",
+  features: "",
+});
+
+const emptyForm = () => ({
   price: "",
   type: "software",
   inventory: "",
-  features: "",
-};
+  translations: Object.fromEntries(
+    routing.locales.map((locale) => [locale, emptyTranslation()])
+  ) as ProductAdmin["translations"],
+});
 
 export default function AdminProductsPage() {
   const t = useTranslations("admin");
   const tt = useTranslations("productTypes");
   const tc = useTranslations("common");
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductAdmin[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [activeLocale, setActiveLocale] = useState<Locale>("fa");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,17 +51,31 @@ export default function AdminProductsPage() {
     loadProducts();
   }, []);
 
+  function updateTranslation(
+    locale: Locale,
+    field: keyof ProductTranslationFields,
+    value: string
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      translations: {
+        ...prev.translations,
+        [locale]: {
+          ...(prev.translations[locale] ?? emptyTranslation()),
+          [field]: value,
+        },
+      },
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = {
-      name: form.name,
-      description: form.description,
-      shortDesc: form.shortDesc,
       price: parseFloat(form.price),
       type: form.type,
       inventory:
         form.type === "device" ? parseInt(form.inventory || "0", 10) : null,
-      features: form.features,
+      translations: form.translations,
     };
 
     const url = editingId
@@ -66,21 +89,21 @@ export default function AdminProductsPage() {
       body: JSON.stringify(payload),
     });
 
-    setForm(emptyForm);
+    setForm(emptyForm());
     setEditingId(null);
     setShowForm(false);
     loadProducts();
   }
 
-  function startEdit(product: Product) {
+  function startEdit(product: ProductAdmin) {
     setForm({
-      name: product.name,
-      description: product.description,
-      shortDesc: product.shortDesc,
       price: String(product.price),
       type: product.type,
       inventory: product.inventory !== null ? String(product.inventory) : "",
-      features: product.features,
+      translations: {
+        fa: product.translations.fa ?? emptyTranslation(),
+        en: product.translations.en ?? emptyTranslation(),
+      },
     });
     setEditingId(product.id);
     setShowForm(true);
@@ -94,13 +117,15 @@ export default function AdminProductsPage() {
 
   if (loading) return <p className="text-zinc-500">{tc("loading")}</p>;
 
+  const active = form.translations[activeLocale] ?? emptyTranslation();
+
   return (
     <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">{t("products")}</h1>
         <button
           onClick={() => {
-            setForm(emptyForm);
+            setForm(emptyForm());
             setEditingId(null);
             setShowForm(!showForm);
           }}
@@ -115,11 +140,15 @@ export default function AdminProductsPage() {
           onSubmit={handleSubmit}
           className="mb-8 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
         >
+          <LocaleTabs active={activeLocale} onChange={setActiveLocale} />
+
           <div className="grid gap-4 sm:grid-cols-2">
             <input
               placeholder={tc("name")}
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              value={active.name}
+              onChange={(e) =>
+                updateTranslation(activeLocale, "name", e.target.value)
+              }
               required
               className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
             />
@@ -135,22 +164,28 @@ export default function AdminProductsPage() {
           </div>
           <input
             placeholder={t("shortDescription")}
-            value={form.shortDesc}
-            onChange={(e) => setForm({ ...form, shortDesc: e.target.value })}
+            value={active.shortDesc}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "shortDesc", e.target.value)
+            }
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
             placeholder={t("fullDescription")}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            value={active.description}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "description", e.target.value)
+            }
             required
             rows={3}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
             placeholder={t("featuresPlaceholder")}
-            value={form.features}
-            onChange={(e) => setForm({ ...form, features: e.target.value })}
+            value={active.features}
+            onChange={(e) =>
+              updateTranslation(activeLocale, "features", e.target.value)
+            }
             rows={3}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
@@ -198,7 +233,12 @@ export default function AdminProductsPage() {
           <tbody className="divide-y divide-zinc-800">
             {products.map((product) => (
               <tr key={product.id} className="text-zinc-300">
-                <td className="px-4 py-3">{product.name}</td>
+                <td className="px-4 py-3">
+                  <div>{product.translations.fa?.name}</div>
+                  <div className="text-xs text-zinc-500">
+                    {product.translations.en?.name}
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   {productTypeLabel(product.type, typeLabels)}
                 </td>

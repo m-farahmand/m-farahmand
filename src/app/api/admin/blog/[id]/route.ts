@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, slugify } from "@/lib/auth";
 import { blogPostSchema } from "@/lib/validations";
+import {
+  deleteBlogBySlug,
+  resolveBlogSlugFromId,
+  serializeBlogPostsForAdmin,
+  upsertBlogByLang,
+} from "@/lib/db-lang";
 
 export async function PUT(
   request: Request,
@@ -17,19 +23,28 @@ export async function PUT(
   try {
     const body = await request.json();
     const data = blogPostSchema.parse(body);
+    const existingSlug = await resolveBlogSlugFromId(id);
+    if (!existingSlug) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
 
-    const post = await prisma.blogPost.update({
-      where: { id },
-      data: {
-        title: data.title,
-        slug: data.slug || slugify(data.title),
-        content: data.content,
-        excerpt: data.excerpt || "",
-        published: data.published ?? true,
-      },
-    });
+    const slug =
+      data.slug ||
+      slugify(data.translations.fa.title || data.translations.en.title);
 
-    return NextResponse.json(post);
+    if (slug !== existingSlug) {
+      await prisma.blogPost.updateMany({
+        where: { slug: existingSlug },
+        data: { slug },
+      });
+    }
+
+    await upsertBlogByLang(slug, data.published ?? true, data.translations);
+
+    const posts = await serializeBlogPostsForAdmin();
+    const updated = posts.find((p) => p.slug === slug);
+
+    return NextResponse.json(updated);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to update post";
@@ -49,7 +64,12 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    await prisma.blogPost.delete({ where: { id } });
+    const slug = await resolveBlogSlugFromId(id);
+    if (!slug) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    await deleteBlogBySlug(slug);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });

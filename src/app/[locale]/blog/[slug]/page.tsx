@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
+import { mapBlogPost } from "@/lib/content";
 import { formatDate } from "@/lib/utils";
 import type { Locale } from "@/i18n/routing";
 
@@ -12,7 +13,9 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { locale, slug } = await params;
   const t = await getTranslations({ locale, namespace: "common" });
-  const post = await prisma.blogPost.findUnique({ where: { slug } });
+  const post = await prisma.blogPost.findUnique({
+    where: { slug_lang: { slug, lang: locale } },
+  });
   if (!post) return { title: t("postNotFound") };
   return { title: post.title, description: post.excerpt };
 }
@@ -62,9 +65,13 @@ export default async function BlogPostPage({ params }: Props) {
 
   const tc = await getTranslations("common");
 
-  const post = await prisma.blogPost.findUnique({ where: { slug } });
+  const post = await prisma.blogPost.findUnique({
+    where: { slug_lang: { slug, lang: locale } },
+  });
 
   if (!post || !post.published) notFound();
+
+  const mapped = mapBlogPost(post);
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-16">
@@ -75,10 +82,10 @@ export default async function BlogPostPage({ params }: Props) {
         {tc("backToBlog")}
       </Link>
       <time className="text-sm text-zinc-500">
-        {formatDate(post.createdAt, locale as Locale)}
+        {formatDate(mapped.createdAt, locale as Locale)}
       </time>
-      <h1 className="mt-2 mb-8 text-4xl font-bold text-white">{post.title}</h1>
-      <div className="prose-blog">{renderContent(post.content)}</div>
+      <h1 className="mt-2 mb-8 text-4xl font-bold text-white">{mapped.title}</h1>
+      <div className="prose-blog">{renderContent(mapped.content)}</div>
     </article>
   );
 }

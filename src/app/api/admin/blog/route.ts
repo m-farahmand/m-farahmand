@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, slugify } from "@/lib/auth";
 import { blogPostSchema } from "@/lib/validations";
+import {
+  serializeBlogPostsForAdmin,
+  upsertBlogByLang,
+} from "@/lib/db-lang";
 
 export async function GET() {
   const session = await getSession();
@@ -9,10 +13,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const posts = await prisma.blogPost.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(posts);
+  return NextResponse.json(await serializeBlogPostsForAdmin());
 }
 
 export async function POST(request: Request) {
@@ -24,18 +25,16 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const data = blogPostSchema.parse(body);
+    const slug =
+      data.slug ||
+      slugify(data.translations.fa.title || data.translations.en.title);
 
-    const post = await prisma.blogPost.create({
-      data: {
-        title: data.title,
-        slug: data.slug || slugify(data.title),
-        content: data.content,
-        excerpt: data.excerpt || "",
-        published: data.published ?? true,
-      },
-    });
+    await upsertBlogByLang(slug, data.published ?? true, data.translations);
 
-    return NextResponse.json(post, { status: 201 });
+    const posts = await serializeBlogPostsForAdmin();
+    const created = posts.find((p) => p.slug === slug);
+
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to create post";

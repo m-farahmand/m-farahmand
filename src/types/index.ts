@@ -1,3 +1,5 @@
+import type { Locale } from "@/i18n/routing";
+
 export type ProductType = "software" | "app" | "device";
 export type OrderStatus = "pending" | "paid" | "delivered";
 
@@ -71,4 +73,52 @@ export interface CartItem {
   type: ProductType;
   quantity: number;
   imageUrl?: string;
+}
+
+export type LocalizedRecord<T> = Partial<Record<Locale, T>>;
+
+export interface ProductTranslationFields {
+  name: string;
+  description: string;
+  shortDesc: string;
+  features: string;
+}
+
+export interface TimelineTranslationFields {
+  title: string;
+  description: string;
+  tags: string;
+}
+
+export interface BlogTranslationFields {
+  title: string;
+  content: string;
+  excerpt: string;
+}
+
+export interface ProductAdmin {
+  id: string;
+  slug: string;
+  price: number;
+  type: ProductType;
+  inventory: number | null;
+  createdAt: string;
+  media?: ProductMedia[];
+  translations: LocalizedRecord<ProductTranslationFields>;
+}
+
+export interface TimelineEntryAdmin {
+  id: string;
+  year: number;
+  sortOrder: number;
+  createdAt: string;
+  translations: LocalizedRecord<TimelineTranslationFields>;
+}
+
+export interface BlogPostAdmin {
+  id: string;
+  slug: string;
+  published: boolean;
+  createdAt: string;
+  translations: LocalizedRecord<BlogTranslationFields>;
 }

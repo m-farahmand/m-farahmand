@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,25 +25,29 @@ model TimelineEntry {
   description String
   tags        String   @default("")
   sortOrder   Int      @default(0) @map("sort_order")
+  lang        String
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@unique([year, sortOrder, lang])
   @@map("timeline")
 }
 
 model Product {
   id          String         @id @default(cuid())
   name        String
-  slug        String         @unique
+  slug        String
   description String
   shortDesc   String         @default("") @map("short_desc")
   price       Float
   type        String
   inventory   Int?
+  lang        String
   features    String         @default("")
   createdAt   DateTime       @default(now()) @map("created_at")
   media       ProductMedia[]
   orderItems  OrderItem[]
 
+  @@unique([slug, lang])
   @@map("products")
 }
 
@@ -58,17 +62,17 @@ model ProductMedia {
 }
 
 model Order {
-  id           String      @id @default(cuid())
-  userId       String?     @map("user_id")
-  status       String      @default("pending")
-  totalPrice   Float       @map("total_price")
-  customerName String      @map("customer_name")
-  customerEmail String     @map("customer_email")
-  customerPhone String?    @map("customer_phone")
-  notes        String?
-  createdAt    DateTime    @default(now()) @map("created_at")
-  user         User?       @relation(fields: [userId], references: [id])
-  items        OrderItem[]
+  id            String      @id @default(cuid())
+  userId        String?     @map("user_id")
+  status        String      @default("pending")
+  totalPrice    Float       @map("total_price")
+  customerName  String      @map("customer_name")
+  customerEmail String      @map("customer_email")
+  customerPhone String?     @map("customer_phone")
+  notes         String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  user          User?       @relation(fields: [userId], references: [id])
+  items         OrderItem[]
 
   @@map("orders")
 }
@@ -88,11 +92,13 @@ model OrderItem {
 model BlogPost {
   id        String   @id @default(cuid())
   title     String
-  slug      String   @unique
+  slug      String
   content   String
   excerpt   String   @default("")
   published Boolean  @default(true)
+  lang      String
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@unique([slug, lang])
   @@map("blog_posts")
 }
