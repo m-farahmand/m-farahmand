@@ -1,13 +1,30 @@
-import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
+import type { Locale } from "@/i18n/routing";
 
-export const metadata = {
-  title: "Blog",
-  description: "Technical posts, product updates, and insights.",
+type Props = {
+  params: Promise<{ locale: string }>;
 };
 
-export default async function BlogPage() {
+export async function generateMetadata({ params }: Props) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "blog" });
+
+  return {
+    title: t("title"),
+    description: t("metaDescription"),
+  };
+}
+
+export default async function BlogPage({ params }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations("blog");
+  const tc = await getTranslations("common");
+
   const posts = await prisma.blogPost.findMany({
     where: { published: true },
     orderBy: { createdAt: "desc" },
@@ -15,13 +32,11 @@ export default async function BlogPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
-      <h1 className="mb-4 text-4xl font-bold text-white">Blog</h1>
-      <p className="mb-12 text-lg text-zinc-400">
-        Technical posts, architecture insights, and product updates.
-      </p>
+      <h1 className="mb-4 text-4xl font-bold text-white">{t("title")}</h1>
+      <p className="mb-12 text-lg text-zinc-400">{t("subtitle")}</p>
 
       {posts.length === 0 ? (
-        <p className="text-zinc-500">No posts published yet.</p>
+        <p className="text-zinc-500">{tc("noPosts")}</p>
       ) : (
         <div className="space-y-6">
           {posts.map((post) => (
@@ -30,7 +45,7 @@ export default async function BlogPage() {
               className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-emerald-500/30"
             >
               <time className="text-sm text-zinc-500">
-                {formatDate(post.createdAt)}
+                {formatDate(post.createdAt, locale as Locale)}
               </time>
               <h2 className="mt-2 text-xl font-semibold text-white">
                 <Link
@@ -47,7 +62,7 @@ export default async function BlogPage() {
                 href={`/blog/${post.slug}`}
                 className="mt-4 inline-block text-sm text-emerald-400 hover:underline"
               >
-                Read more &rarr;
+                {tc("readMore")}
               </Link>
             </article>
           ))}

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { AddToCartButton } from "@/components/products/AddToCartButton";
 import {
@@ -6,28 +7,31 @@ import {
   parseFeatures,
   productTypeLabel,
 } from "@/lib/utils";
+import type { Locale } from "@/i18n/routing";
 import type { Product } from "@/types";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+type Props = {
+  params: Promise<{ locale: string; slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props) {
+  const { locale, slug } = await params;
+  const t = await getTranslations({ locale, namespace: "common" });
   const product = await prisma.product.findUnique({ where: { slug } });
-  if (!product) return { title: "Product Not Found" };
+  if (!product) return { title: t("productNotFound") };
   return {
     title: product.name,
     description: product.shortDesc || product.description,
   };
 }
 
-export default async function ProductDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+export default async function ProductDetailPage({ params }: Props) {
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations("common");
+  const tt = await getTranslations("productTypes");
+
   const product = await prisma.product.findUnique({
     where: { slug },
     include: { media: true },
@@ -42,6 +46,11 @@ export default async function ProductDetailPage({
 
   const features = parseFeatures(product.features);
   const imageUrl = product.media[0]?.url;
+  const typeLabels = {
+    software: tt("software"),
+    app: tt("app"),
+    device: tt("device"),
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">
@@ -60,11 +69,11 @@ export default async function ProductDetailPage({
 
         <div>
           <span className="mb-3 inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-400">
-            {productTypeLabel(product.type)}
+            {productTypeLabel(product.type, typeLabels)}
           </span>
           <h1 className="mb-4 text-4xl font-bold text-white">{product.name}</h1>
           <p className="mb-6 text-3xl font-bold text-emerald-400">
-            {formatPrice(product.price)}
+            {formatPrice(product.price, locale as Locale)}
           </p>
           <p className="mb-8 leading-relaxed text-zinc-400">
             {product.description}
@@ -73,7 +82,7 @@ export default async function ProductDetailPage({
           {features.length > 0 && (
             <div className="mb-8">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-                Features
+                {t("features")}
               </h2>
               <ul className="space-y-2">
                 {features.map((feature) => (
@@ -92,8 +101,8 @@ export default async function ProductDetailPage({
           {product.inventory !== null && (
             <p className="mb-6 text-sm text-zinc-500">
               {product.inventory > 0
-                ? `${product.inventory} units available`
-                : "Currently out of stock"}
+                ? t("unitsAvailable", { count: product.inventory })
+                : t("currentlyOutOfStock")}
             </p>
           )}
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useCart } from "@/components/cart/CartProvider";
 import type { Product } from "@/types";
 
@@ -13,6 +14,8 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
   const { addItem } = useCart();
   const router = useRouter();
   const [added, setAdded] = useState(false);
+  const t = useTranslations("productActions");
+  const tc = useTranslations("common");
 
   function handleAdd() {
     addItem({
@@ -42,14 +45,14 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         disabled={outOfStock}
         className="flex-1 rounded-lg border border-zinc-700 px-6 py-3 text-sm font-medium text-white transition hover:border-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {outOfStock ? "Out of Stock" : added ? "Added!" : "Add to Cart"}
+        {outOfStock ? tc("outOfStock") : added ? t("added") : t("addToCart")}
       </button>
       <button
         onClick={handleBuyNow}
         disabled={outOfStock}
         className="flex-1 rounded-lg bg-emerald-500 px-6 py-3 text-sm font-medium text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Buy Now
+        {t("buyNow")}
       </button>
     </div>
   );

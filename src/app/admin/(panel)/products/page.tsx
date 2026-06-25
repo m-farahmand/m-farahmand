@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { formatPrice, productTypeLabel } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -15,11 +16,20 @@ const emptyForm = {
 };
 
 export default function AdminProductsPage() {
+  const t = useTranslations("admin");
+  const tt = useTranslations("productTypes");
+  const tc = useTranslations("common");
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const typeLabels = {
+    software: tt("software"),
+    app: tt("app"),
+    device: tt("device"),
+  };
 
   async function loadProducts() {
     const res = await fetch("/api/admin/products");
@@ -77,17 +87,17 @@ export default function AdminProductsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this product?")) return;
+    if (!confirm(t("deleteProductConfirm"))) return;
     await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
     loadProducts();
   }
 
-  if (loading) return <p className="text-zinc-500">Loading...</p>;
+  if (loading) return <p className="text-zinc-500">{tc("loading")}</p>;
 
   return (
-    <div>
+    <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Products</h1>
+        <h1 className="text-2xl font-bold text-white">{t("products")}</h1>
         <button
           onClick={() => {
             setForm(emptyForm);
@@ -96,7 +106,7 @@ export default function AdminProductsPage() {
           }}
           className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-emerald-400"
         >
-          {showForm ? "Cancel" : "Add Product"}
+          {showForm ? t("cancel") : t("addProduct")}
         </button>
       </div>
 
@@ -107,14 +117,14 @@ export default function AdminProductsPage() {
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <input
-              placeholder="Name"
+              placeholder={tc("name")}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
               className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
             />
             <input
-              placeholder="Price"
+              placeholder={t("price")}
               type="number"
               step="0.01"
               value={form.price}
@@ -124,13 +134,13 @@ export default function AdminProductsPage() {
             />
           </div>
           <input
-            placeholder="Short description"
+            placeholder={t("shortDescription")}
             value={form.shortDesc}
             onChange={(e) => setForm({ ...form, shortDesc: e.target.value })}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
-            placeholder="Full description"
+            placeholder={t("fullDescription")}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             required
@@ -138,7 +148,7 @@ export default function AdminProductsPage() {
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
-            placeholder="Features (one per line)"
+            placeholder={t("featuresPlaceholder")}
             value={form.features}
             onChange={(e) => setForm({ ...form, features: e.target.value })}
             rows={3}
@@ -150,13 +160,13 @@ export default function AdminProductsPage() {
               onChange={(e) => setForm({ ...form, type: e.target.value })}
               className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
             >
-              <option value="software">Software</option>
-              <option value="app">App</option>
-              <option value="device">Device</option>
+              <option value="software">{tt("software")}</option>
+              <option value="app">{tt("app")}</option>
+              <option value="device">{tt("device")}</option>
             </select>
             {form.type === "device" && (
               <input
-                placeholder="Inventory"
+                placeholder={t("inventory")}
                 type="number"
                 value={form.inventory}
                 onChange={(e) =>
@@ -170,19 +180,19 @@ export default function AdminProductsPage() {
             type="submit"
             className="rounded-lg bg-emerald-500 px-6 py-2 text-sm font-medium text-zinc-950"
           >
-            {editingId ? "Update" : "Create"} Product
+            {editingId ? t("updateProduct") : t("createProduct")}
           </button>
         </form>
       )}
 
       <div className="overflow-hidden rounded-xl border border-zinc-800">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-900/80 text-left text-zinc-500">
+          <thead className="bg-zinc-900/80 text-start text-zinc-500">
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Price</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3">{tc("name")}</th>
+              <th className="px-4 py-3">{t("typeLabel")}</th>
+              <th className="px-4 py-3">{t("price")}</th>
+              <th className="px-4 py-3">{t("actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
@@ -190,21 +200,21 @@ export default function AdminProductsPage() {
               <tr key={product.id} className="text-zinc-300">
                 <td className="px-4 py-3">{product.name}</td>
                 <td className="px-4 py-3">
-                  {productTypeLabel(product.type)}
+                  {productTypeLabel(product.type, typeLabels)}
                 </td>
-                <td className="px-4 py-3">{formatPrice(product.price)}</td>
+                <td className="px-4 py-3">{formatPrice(product.price, "fa")}</td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => startEdit(product)}
-                    className="mr-3 text-emerald-400 hover:underline"
+                    className="me-3 text-emerald-400 hover:underline"
                   >
-                    Edit
+                    {t("edit")}
                   </button>
                   <button
                     onClick={() => handleDelete(product.id)}
                     className="text-red-400 hover:underline"
                   >
-                    Delete
+                    {t("delete")}
                   </button>
                 </td>
               </tr>

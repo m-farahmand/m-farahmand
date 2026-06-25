@@ -1,24 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useCart } from "@/components/cart/CartProvider";
 import { formatPrice } from "@/lib/utils";
+import type { Locale } from "@/i18n/routing";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const router = useRouter();
+  const locale = useLocale() as Locale;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const t = useTranslations("checkout");
+  const tc = useTranslations("common");
 
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-24 text-center">
-        <h1 className="mb-4 text-3xl font-bold text-white">Checkout</h1>
-        <p className="mb-8 text-zinc-400">No items to checkout.</p>
+        <h1 className="mb-4 text-3xl font-bold text-white">{t("title")}</h1>
+        <p className="mb-8 text-zinc-400">{t("noItems")}</p>
         <Link href="/products" className="text-emerald-400 hover:underline">
-          Browse products
+          {t("browseProducts")}
         </Link>
       </div>
     );
@@ -48,12 +52,12 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Order failed");
+      if (!res.ok) throw new Error(data.error || t("orderFailed"));
 
       clearCart();
       router.push(`/checkout/confirmation?orderId=${data.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("somethingWrong"));
     } finally {
       setLoading(false);
     }
@@ -61,12 +65,12 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
-      <h1 className="mb-8 text-3xl font-bold text-white">Checkout</h1>
+      <h1 className="mb-8 text-3xl font-bold text-white">{t("title")}</h1>
 
       <div className="grid gap-12 lg:grid-cols-2">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1 block text-sm text-zinc-400">Full Name</label>
+            <label className="mb-1 block text-sm text-zinc-400">{t("fullName")}</label>
             <input
               name="name"
               required
@@ -74,7 +78,7 @@ export default function CheckoutPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-zinc-400">Email</label>
+            <label className="mb-1 block text-sm text-zinc-400">{tc("email")}</label>
             <input
               name="email"
               type="email"
@@ -84,7 +88,7 @@ export default function CheckoutPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-zinc-400">
-              Phone (optional)
+              {t("phoneOptional")}
             </label>
             <input
               name="phone"
@@ -94,7 +98,7 @@ export default function CheckoutPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-zinc-400">
-              Notes (optional)
+              {t("notesOptional")}
             </label>
             <textarea
               name="notes"
@@ -105,9 +109,7 @@ export default function CheckoutPage() {
 
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
             <p className="text-sm text-amber-200">
-              <strong>Manual Payment:</strong> After placing your order, you
-              will receive payment instructions via email. Your order status will
-              be updated once payment is confirmed.
+              <strong>{t("manualPaymentTitle")}</strong> {t("manualPaymentText")}
             </p>
           </div>
 
@@ -118,13 +120,13 @@ export default function CheckoutPage() {
             disabled={loading}
             className="w-full rounded-lg bg-emerald-500 py-3 text-sm font-medium text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
           >
-            {loading ? "Placing Order..." : "Place Order"}
+            {loading ? t("placingOrder") : t("placeOrder")}
           </button>
         </form>
 
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
           <h2 className="mb-4 text-lg font-semibold text-white">
-            Order Summary
+            {t("orderSummary")}
           </h2>
           <div className="space-y-3">
             {items.map((item) => (
@@ -136,15 +138,15 @@ export default function CheckoutPage() {
                   {item.name} × {item.quantity}
                 </span>
                 <span className="text-white">
-                  {formatPrice(item.price * item.quantity)}
+                  {formatPrice(item.price * item.quantity, locale)}
                 </span>
               </div>
             ))}
           </div>
           <div className="mt-4 border-t border-zinc-800 pt-4">
             <div className="flex justify-between font-bold">
-              <span className="text-white">Total</span>
-              <span className="text-emerald-400">{formatPrice(total)}</span>
+              <span className="text-white">{tc("total")}</span>
+              <span className="text-emerald-400">{formatPrice(total, locale)}</span>
             </div>
           </div>
         </div>

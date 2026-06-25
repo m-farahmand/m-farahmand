@@ -1,20 +1,23 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useCart } from "@/components/cart/CartProvider";
-
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/products", label: "Products" },
-  { href: "/blog", label: "Blog" },
-  { href: "/contact", label: "Contact" },
-];
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Header() {
   const pathname = usePathname();
+  const locale = useLocale();
   const { itemCount } = useCart();
+  const t = useTranslations("nav");
+
+  const navLinks = [
+    { href: "/", label: t("home") },
+    { href: "/about", label: t("about") },
+    { href: "/products", label: t("products") },
+    { href: "/blog", label: t("blog") },
+    { href: "/contact", label: t("contact") },
+  ] as const;
 
   if (pathname.startsWith("/admin")) return null;
 
@@ -41,14 +44,15 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher currentLocale={locale} />
           <Link
             href="/cart"
             className="relative rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-emerald-500/50 hover:text-white"
           >
-            Cart
+            {t("cart")}
             {itemCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-zinc-950">
+              <span className="absolute -top-2 -end-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-zinc-950">
                 {itemCount}
               </span>
             )}

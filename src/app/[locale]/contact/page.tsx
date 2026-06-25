@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const t = useTranslations("contact");
+  const tc = useTranslations("common");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -12,21 +15,17 @@ export default function ContactPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-4 text-4xl font-bold text-white">Contact</h1>
-      <p className="mb-12 text-lg text-zinc-400">
-        Have a question or want to collaborate? Get in touch.
-      </p>
+      <h1 className="mb-4 text-4xl font-bold text-white">{t("title")}</h1>
+      <p className="mb-12 text-lg text-zinc-400">{t("subtitle")}</p>
 
       {submitted ? (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-8 text-center">
-          <p className="text-emerald-400">
-            Message sent! We&apos;ll get back to you soon.
-          </p>
+          <p className="text-emerald-400">{t("successMessage")}</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1 block text-sm text-zinc-400">Name</label>
+            <label className="mb-1 block text-sm text-zinc-400">{tc("name")}</label>
             <input
               name="name"
               required
@@ -34,7 +33,7 @@ export default function ContactPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-zinc-400">Email</label>
+            <label className="mb-1 block text-sm text-zinc-400">{tc("email")}</label>
             <input
               name="email"
               type="email"
@@ -43,7 +42,7 @@ export default function ContactPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-zinc-400">Message</label>
+            <label className="mb-1 block text-sm text-zinc-400">{tc("message")}</label>
             <textarea
               name="message"
               required
@@ -55,14 +54,14 @@ export default function ContactPage() {
             type="submit"
             className="rounded-lg bg-emerald-500 px-8 py-3 text-sm font-medium text-zinc-950 transition hover:bg-emerald-400"
           >
-            Send Message
+            {t("sendMessage")}
           </button>
         </form>
       )}
 
       <div className="mt-16 border-t border-zinc-800 pt-8">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          Connect
+          {t("connect")}
         </h2>
         <div className="flex gap-4">
           <a
@@ -85,7 +84,7 @@ export default function ContactPage() {
             href="mailto:hello@farahmand.dev"
             className="text-zinc-400 hover:text-emerald-400"
           >
-            Email
+            {tc("email")}
           </a>
         </div>
       </div>

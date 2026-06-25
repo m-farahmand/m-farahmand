@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { formatPrice, orderStatusLabel } from "@/lib/utils";
 import type { Order } from "@/types";
 
 export default function AdminOrdersPage() {
+  const t = useTranslations("admin");
+  const to = useTranslations("orderStatus");
+  const tc = useTranslations("common");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const statusLabels = {
+    pending: to("pending"),
+    paid: to("paid"),
+    delivered: to("delivered"),
+  };
 
   async function loadOrders() {
     const res = await fetch("/api/admin/orders");
@@ -28,14 +38,14 @@ export default function AdminOrdersPage() {
     loadOrders();
   }
 
-  if (loading) return <p className="text-zinc-500">Loading...</p>;
+  if (loading) return <p className="text-zinc-500">{tc("loading")}</p>;
 
   return (
-    <div>
-      <h1 className="mb-8 text-2xl font-bold text-white">Orders</h1>
+    <div dir="rtl">
+      <h1 className="mb-8 text-2xl font-bold text-white">{t("orders")}</h1>
 
       {orders.length === 0 ? (
-        <p className="text-zinc-500">No orders yet.</p>
+        <p className="text-zinc-500">{t("noOrders")}</p>
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
@@ -48,12 +58,12 @@ export default function AdminOrdersPage() {
                   <p className="font-medium text-white">{order.customerName}</p>
                   <p className="text-sm text-zinc-500">{order.customerEmail}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <p className="font-bold text-emerald-400">
-                    {formatPrice(order.totalPrice)}
+                    {formatPrice(order.totalPrice, "fa")}
                   </p>
                   <p className="text-xs text-zinc-500">
-                    {new Date(order.createdAt).toLocaleString()}
+                    {new Date(order.createdAt).toLocaleString("fa-IR")}
                   </p>
                 </div>
               </div>
@@ -61,7 +71,7 @@ export default function AdminOrdersPage() {
               {order.items && (
                 <div className="mb-3 text-sm text-zinc-400">
                   {order.items.map((item) => (
-                    <span key={item.id} className="mr-4">
+                    <span key={item.id} className="ms-4">
                       {item.product?.name} × {item.quantity}
                     </span>
                   ))}
@@ -69,7 +79,7 @@ export default function AdminOrdersPage() {
               )}
 
               <div className="flex items-center gap-2">
-                <span className="text-sm text-zinc-500">Status:</span>
+                <span className="text-sm text-zinc-500">{t("status")}:</span>
                 {(["pending", "paid", "delivered"] as const).map((status) => (
                   <button
                     key={status}
@@ -80,7 +90,7 @@ export default function AdminOrdersPage() {
                         : "bg-zinc-800 text-zinc-500 hover:text-white"
                     }`}
                   >
-                    {orderStatusLabel(status)}
+                    {orderStatusLabel(status, statusLabels)}
                   </button>
                 ))}
               </div>

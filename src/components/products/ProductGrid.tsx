@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { Product } from "@/types";
 import { ProductCard } from "./ProductCard";
 
@@ -7,10 +10,10 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ products, title }: ProductGridProps) {
+  const t = useTranslations("common");
+
   if (products.length === 0) {
-    return (
-      <p className="text-center text-zinc-500">No products available yet.</p>
-    );
+    return <p className="text-center text-zinc-500">{t("noProducts")}</p>;
   }
 
   return (

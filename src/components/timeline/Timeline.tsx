@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { TimelineEntry } from "@/types";
 import { parseTags } from "@/lib/utils";
 
@@ -7,13 +10,15 @@ interface TimelineProps {
 }
 
 export function Timeline({ entries, compact = false }: TimelineProps) {
+  const t = useTranslations("common");
+
   if (entries.length === 0) {
-    return <p className="text-zinc-500">No timeline entries yet.</p>;
+    return <p className="text-zinc-500">{t("noTimeline")}</p>;
   }
 
   return (
     <div className="relative">
-      <div className="absolute left-4 top-0 h-full w-px bg-gradient-to-b from-emerald-500/50 via-emerald-500/20 to-transparent md:left-1/2 md:-translate-x-px" />
+      <div className="absolute start-4 top-0 h-full w-px bg-gradient-to-b from-emerald-500/50 via-emerald-500/20 to-transparent md:start-1/2 md:-translate-x-px" />
 
       <div className="space-y-8">
         {entries.map((entry, index) => {
@@ -32,18 +37,18 @@ export function Timeline({ entries, compact = false }: TimelineProps) {
               }`}
             >
               <div
-                className={`absolute left-4 z-10 h-3 w-3 -translate-x-1/2 rounded-full border-2 border-emerald-500 bg-zinc-950 md:left-1/2 ${
+                className={`absolute start-4 z-10 h-3 w-3 -translate-x-1/2 rounded-full border-2 border-emerald-500 bg-zinc-950 md:start-1/2 ${
                   compact ? "top-2" : "top-6"
                 }`}
               />
 
               <div
-                className={`ml-10 w-full md:ml-0 md:w-[calc(50%-2rem)] ${
+                className={`ms-10 w-full md:ms-0 md:w-[calc(50%-2rem)] ${
                   compact
                     ? ""
                     : isEven
-                      ? "md:pr-8 md:text-right"
-                      : "md:pl-8"
+                      ? "md:pe-8 md:text-end"
+                      : "md:ps-8"
                 }`}
               >
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 transition hover:border-emerald-500/30">

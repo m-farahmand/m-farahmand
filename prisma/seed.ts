@@ -17,65 +17,65 @@ async function main() {
   const timelineEntries = [
     {
       year: 2018,
-      title: "Robox Startup — Project Manager",
+      title: "استارتاپ Robox — مدیر پروژه",
       description:
-        "Managed scooter production and mechanical design. Coordinated electronics and software teams using Agile practices.",
+        "مدیریت تولید اسکوتر و طراحی مکانیکی. هماهنگی تیم‌های الکترونیک و نرم‌افزار با روش‌های Agile.",
       tags: "Agile,Hardware,Management",
       sortOrder: 1,
     },
     {
       year: 2019,
-      title: "MonoChair — IoT & Embedded Systems",
+      title: "MonoChair — IoT و سیستم‌های تعبیه‌شده",
       description:
-        "Led development of electronic wheelchairs. Programmed STM32 microcontrollers, implemented MQTT over WiFi, and controlled BLDC motors.",
+        "رهبری توسعه ویلچرهای الکترونیکی. برنامه‌نویسی میکروکنترلر STM32، پیاده‌سازی MQTT روی WiFi و کنترل موتور BLDC.",
       tags: "C++,STM32,MQTT,IoT",
       sortOrder: 2,
     },
     {
       year: 2020,
-      title: "Tefas — Product Manager at Sinaa Bank",
+      title: "Tefas — مدیر محصول در بانک سینا",
       description:
-        "Led product initiatives in banking. Introduced Agile/Scrum, designed wireframes, and reviewed C# (.NET Core) and React code.",
+        "رهبری ابتکارات محصول در بانکداری. معرفی Agile/Scrum، طراحی وایرفریم و بازبینی کد C# (.NET Core) و React.",
       tags: "Product Management,Banking,Agile",
       sortOrder: 3,
     },
     {
       year: 2021,
-      title: "Taha Company — Co-Founder & Full-Stack Engineer",
+      title: "شرکت Taha — هم‌بنیان‌گذار و مهندس فول‌استک",
       description:
-        "Built hotel automation system with Node.js (Strapi, PostgreSQL) and Vue.js. Implemented Jenkins DevOps pipelines.",
+        "ساخت سیستم اتوماسیون هتل با Node.js (Strapi, PostgreSQL) و Vue.js. پیاده‌سازی خطوط DevOps با Jenkins.",
       tags: "Node.js,Vue.js,PostgreSQL,DevOps",
       sortOrder: 4,
     },
     {
       year: 2022,
-      title: "Microservices & Distributed Systems",
+      title: "میکروسرویس‌ها و سیستم‌های توزیع‌شده",
       description:
-        "Deep dive into event-driven architecture, messaging queues, and cloud-native patterns with NestJS and Docker.",
+        "تمرکز عمیق بر معماری رویداد-محور، صف‌های پیام و الگوهای Cloud-Native با NestJS و Docker.",
       tags: "NestJS,Docker,Microservices",
       sortOrder: 5,
     },
     {
       year: 2023,
-      title: "ML & Distributed Systems",
+      title: "ML و سیستم‌های توزیع‌شده",
       description:
-        "Explored machine learning integration with distributed backend systems. Focus on scalable, resilient architectures.",
+        "کاوش یکپارچه‌سازی یادگیری ماشین با سیستم‌های بک‌اند توزیع‌شده. تمرکز بر معماری‌های مقیاس‌پذیر و resilient.",
       tags: "ML,Distributed Systems,Cloud",
       sortOrder: 6,
     },
     {
       year: 2024,
-      title: "Crypto Infrastructure — Backend Developer",
+      title: "زیرساخت کریپتو — توسعه‌دهنده بک‌اند",
       description:
-        "Built token infrastructure using microservices and event-driven architecture. Risk management with .NET Core and Protobuf.",
+        "ساخت زیرساخت توکن با میکروسرویس‌ها و معماری رویداد-محور. مدیریت ریسک با .NET Core و Protobuf.",
       tags: "C#,.NET Core,Protobuf,RabbitMQ",
       sortOrder: 7,
     },
     {
       year: 2025,
-      title: "Personal Platform & Products",
+      title: "پلتفرم شخصی و محصولات",
       description:
-        "Building a personal platform to showcase journey, sell software products, apps, and IoT devices.",
+        "ساخت پلتفرم شخصی برای نمایش مسیر حرفه‌ای، فروش محصولات نرم‌افزاری، اپلیکیشن‌ها و دستگاه‌های IoT.",
       tags: "Next.js,Platform,E-commerce",
       sortOrder: 8,
     },
@@ -83,49 +83,54 @@ async function main() {
 
   for (const entry of timelineEntries) {
     const existing = await prisma.timelineEntry.findFirst({
-      where: { year: entry.year, title: entry.title },
+      where: { year: entry.year, sortOrder: entry.sortOrder },
     });
-    if (!existing) {
+    if (existing) {
+      await prisma.timelineEntry.update({
+        where: { id: existing.id },
+        data: entry,
+      });
+    } else {
       await prisma.timelineEntry.create({ data: entry });
     }
   }
 
   const products = [
     {
-      name: "Hotel Automation Suite",
+      name: "سوییت اتوماسیون هتل",
       slug: "hotel-automation-suite",
       description:
-        "A complete hotel management automation platform built with Node.js and Vue.js. Handles reservations, billing, housekeeping, and reporting.",
-      shortDesc: "Full-stack hotel management automation",
+        "پلتفرم جامع اتوماسیون مدیریت هتل ساخته‌شده با Node.js و Vue.js. مدیریت رزرو، صورتحساب، housekeeping و گزارش‌گیری.",
+      shortDesc: "اتوماسیون کامل مدیریت هتل",
       price: 299,
       type: "software",
       features:
-        "Reservation management\nBilling & invoicing\nHousekeeping workflow\nReal-time reporting\nMulti-property support",
+        "مدیریت رزرو\nصورتحساب و فاکتور\nگردش کار housekeeping\nگزارش‌گیری لحظه‌ای\nپشتیبانی چند ملک",
       media: [{ url: "/products/hotel-suite.svg", type: "image" }],
     },
     {
-      name: "Travel Agency Portal",
+      name: "پورتال آژانس مسافرتی",
       slug: "travel-agency-portal",
       description:
-        "Web application for travel agencies to manage bookings, itineraries, and customer relationships with TDD-driven quality.",
-      shortDesc: "Travel agency booking & management",
+        "اپلیکیشن وب برای آژانس‌های مسافرتی جهت مدیریت رزرو، برنامه سفر و روابط مشتری با کیفیت مبتنی بر TDD.",
+      shortDesc: "رزرو و مدیریت آژانس مسافرتی",
       price: 199,
       type: "app",
       features:
-        "Booking management\nItinerary builder\nCustomer CRM\nPayment tracking\nMulti-language ready",
+        "مدیریت رزرو\nسازنده برنامه سفر\nCRM مشتری\nپیگیری پرداخت\nآماده چندزبانه",
       media: [{ url: "/products/travel-portal.svg", type: "image" }],
     },
     {
-      name: "Smart Wheelchair Controller",
+      name: "کنترلر هوشمند ویلچر",
       slug: "smart-wheelchair-controller",
       description:
-        "IoT-enabled wheelchair control system with STM32 microcontroller, MQTT connectivity, and Android companion app for remote monitoring.",
-      shortDesc: "IoT wheelchair control with MQTT",
+        "سیستم کنترل ویلچر IoT با میکروکنترلر STM32، اتصال MQTT و اپلیکیشن اندروید برای پایش از راه دور.",
+      shortDesc: "کنترل IoT ویلچر با MQTT",
       price: 1499,
       type: "device",
       inventory: 10,
       features:
-        "STM32-based motor control\nMQTT over WiFi\nJoystick interface\nAndroid companion app\nBLDC motor support",
+        "کنترل موتور مبتنی بر STM32\nMQTT روی WiFi\nرابط جوی‌استیک\nاپلیکیشن همراه اندروید\nپشتیبانی موتور BLDC",
       media: [{ url: "/products/wheelchair.svg", type: "image" }],
     },
   ];
@@ -144,20 +149,20 @@ async function main() {
 
   const blogPosts = [
     {
-      title: "Building Event-Driven Microservices with .NET",
+      title: "ساخت میکروسرویس‌های رویداد-محور با .NET",
       slug: "building-event-driven-microservices",
       excerpt:
-        "Lessons learned from building token infrastructure with messaging queues and Protobuf.",
+        "درس‌هایی از ساخت زیرساخت توکن با صف‌های پیام و Protobuf.",
       content:
-        "## Overview\n\nEvent-driven architecture has become essential for scalable backend systems.\n\n### Key Takeaways\n\n- Use messaging queues for decoupling\n- Protobuf for efficient serialization\n- Design for failure from day one\n\nThis post covers patterns we used in production crypto infrastructure.",
+        "## مرور کلی\n\nمعماری رویداد-محور برای سیستم‌های بک‌اند مقیاس‌پذیر ضروری شده است.\n\n### نکات کلیدی\n\n- استفاده از صف پیام برای جداسازی\n- Protobuf برای سریال‌سازی کارآمد\n- طراحی برای شکست از روز اول\n\nاین مطلب الگوهایی را که در زیرساخت کریپتو تولیدی استفاده کردیم پوشش می‌دهد.",
     },
     {
-      title: "From Monolith to Microservices: A Practical Guide",
+      title: "از مونولیت به میکروسرویس: راهنمای عملی",
       slug: "monolith-to-microservices",
       excerpt:
-        "A step-by-step approach to decomposing a monolithic application into microservices.",
+        "رویکرد گام‌به‌گام برای تجزیه اپلیکیشن مونولیتیک به میکروسرویس‌ها.",
       content:
-        "## Why Microservices?\n\nWhen your system grows beyond a single team's capacity, microservices offer independent deployment and scaling.\n\n### Migration Strategy\n\n1. Identify bounded contexts\n2. Extract the most independent module first\n3. Implement API gateway pattern\n4. Add observability early",
+        "## چرا میکروسرویس؟\n\nوقتی سیستم شما از ظرفیت یک تیم فراتر می‌رود، میکروسرویس‌ها استقرار و مقیاس‌دهی مستقل را ارائه می‌دهند.\n\n### استراتژی مهاجرت\n\n1. شناسایی bounded contextها\n2. استخراج مستقل‌ترین ماژول اول\n3. پیاده‌سازی الگوی API gateway\n4. افزودن observability از ابتدا",
     },
   ];
 

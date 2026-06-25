@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { TimelineEntry } from "@/types";
 
 const emptyForm = {
@@ -12,6 +13,8 @@ const emptyForm = {
 };
 
 export default function AdminTimelinePage() {
+  const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,17 +72,17 @@ export default function AdminTimelinePage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this entry?")) return;
+    if (!confirm(t("deleteEntryConfirm"))) return;
     await fetch(`/api/admin/timeline/${id}`, { method: "DELETE" });
     loadEntries();
   }
 
-  if (loading) return <p className="text-zinc-500">Loading...</p>;
+  if (loading) return <p className="text-zinc-500">{tc("loading")}</p>;
 
   return (
-    <div>
+    <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Timeline</h1>
+        <h1 className="text-2xl font-bold text-white">{t("timeline")}</h1>
         <button
           onClick={() => {
             setForm(emptyForm);
@@ -88,7 +91,7 @@ export default function AdminTimelinePage() {
           }}
           className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-emerald-400"
         >
-          {showForm ? "Cancel" : "Add Entry"}
+          {showForm ? t("cancel") : t("addEntry")}
         </button>
       </div>
 
@@ -99,7 +102,7 @@ export default function AdminTimelinePage() {
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <input
-              placeholder="Year"
+              placeholder={t("year")}
               type="number"
               value={form.year}
               onChange={(e) => setForm({ ...form, year: e.target.value })}
@@ -107,7 +110,7 @@ export default function AdminTimelinePage() {
               className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
             />
             <input
-              placeholder="Sort order"
+              placeholder={t("sortOrder")}
               type="number"
               value={form.sortOrder}
               onChange={(e) =>
@@ -117,14 +120,14 @@ export default function AdminTimelinePage() {
             />
           </div>
           <input
-            placeholder="Title"
+            placeholder={t("titleLabel")}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             required
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
-            placeholder="Description"
+            placeholder={t("fullDescription")}
             value={form.description}
             onChange={(e) =>
               setForm({ ...form, description: e.target.value })
@@ -134,7 +137,7 @@ export default function AdminTimelinePage() {
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <input
-            placeholder="Tags (comma-separated)"
+            placeholder={t("tagsPlaceholder")}
             value={form.tags}
             onChange={(e) => setForm({ ...form, tags: e.target.value })}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
@@ -143,7 +146,7 @@ export default function AdminTimelinePage() {
             type="submit"
             className="rounded-lg bg-emerald-500 px-6 py-2 text-sm font-medium text-zinc-950"
           >
-            {editingId ? "Update" : "Create"} Entry
+            {editingId ? t("updateEntry") : t("createEntry")}
           </button>
         </form>
       )}
@@ -155,7 +158,7 @@ export default function AdminTimelinePage() {
             className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"
           >
             <div>
-              <span className="mr-3 rounded-full bg-emerald-500/10 px-2 py-0.5 text-sm font-bold text-emerald-400">
+              <span className="ms-3 rounded-full bg-emerald-500/10 px-2 py-0.5 text-sm font-bold text-emerald-400">
                 {entry.year}
               </span>
               <span className="font-medium text-white">{entry.title}</span>
@@ -163,15 +166,15 @@ export default function AdminTimelinePage() {
             <div>
               <button
                 onClick={() => startEdit(entry)}
-                className="mr-3 text-sm text-emerald-400 hover:underline"
+                className="ms-3 text-sm text-emerald-400 hover:underline"
               >
-                Edit
+                {t("edit")}
               </button>
               <button
                 onClick={() => handleDelete(entry.id)}
                 className="text-sm text-red-400 hover:underline"
               >
-                Delete
+                {t("delete")}
               </button>
             </div>
           </div>

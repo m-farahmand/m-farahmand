@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/utils";
 import type { BlogPost } from "@/types";
 
@@ -12,6 +13,8 @@ const emptyForm = {
 };
 
 export default function AdminBlogPage() {
+  const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -59,17 +62,17 @@ export default function AdminBlogPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this post?")) return;
+    if (!confirm(t("deletePostConfirm"))) return;
     await fetch(`/api/admin/blog/${id}`, { method: "DELETE" });
     loadPosts();
   }
 
-  if (loading) return <p className="text-zinc-500">Loading...</p>;
+  if (loading) return <p className="text-zinc-500">{tc("loading")}</p>;
 
   return (
-    <div>
+    <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Blog Posts</h1>
+        <h1 className="text-2xl font-bold text-white">{t("blogPosts")}</h1>
         <button
           onClick={() => {
             setForm(emptyForm);
@@ -78,7 +81,7 @@ export default function AdminBlogPage() {
           }}
           className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-emerald-400"
         >
-          {showForm ? "Cancel" : "New Post"}
+          {showForm ? t("cancel") : t("newPost")}
         </button>
       </div>
 
@@ -88,20 +91,20 @@ export default function AdminBlogPage() {
           className="mb-8 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
         >
           <input
-            placeholder="Title"
+            placeholder={t("titleLabel")}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             required
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <input
-            placeholder="Excerpt"
+            placeholder={t("excerpt")}
             value={form.excerpt}
             onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-white"
           />
           <textarea
-            placeholder="Content (markdown-style: ## heading, - list)"
+            placeholder={t("contentPlaceholder")}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
             required
@@ -116,13 +119,13 @@ export default function AdminBlogPage() {
                 setForm({ ...form, published: e.target.checked })
               }
             />
-            Published
+            {t("published")}
           </label>
           <button
             type="submit"
             className="rounded-lg bg-emerald-500 px-6 py-2 text-sm font-medium text-zinc-950"
           >
-            {editingId ? "Update" : "Create"} Post
+            {editingId ? t("updatePost") : t("createPost")}
           </button>
         </form>
       )}
@@ -136,22 +139,22 @@ export default function AdminBlogPage() {
             <div>
               <p className="font-medium text-white">{post.title}</p>
               <p className="text-sm text-zinc-500">
-                {formatDate(post.createdAt)}
-                {!post.published && " · Draft"}
+                {formatDate(post.createdAt, "fa")}
+                {!post.published && ` · ${t("draft")}`}
               </p>
             </div>
             <div>
               <button
                 onClick={() => startEdit(post)}
-                className="mr-3 text-sm text-emerald-400 hover:underline"
+                className="ms-3 text-sm text-emerald-400 hover:underline"
               >
-                Edit
+                {t("edit")}
               </button>
               <button
                 onClick={() => handleDelete(post.id)}
                 className="text-sm text-red-400 hover:underline"
               >
-                Delete
+                {t("delete")}
               </button>
             </div>
           </div>
